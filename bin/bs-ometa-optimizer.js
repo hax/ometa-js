@@ -52,6 +52,6 @@ BSNullOptimization=subclass(OMeta,{
     BSJumpTableOptimization: BSJumpTableOptimization,
     BSNullOptimization: BSNullOptimization
   }
-  $.extend(OMeta.interpreters, api);
+  subclass(OMeta.interpreters, api);
   return api;
 });

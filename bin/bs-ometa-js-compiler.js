@@ -17,8 +17,8 @@ BSOMetaJSTranslator=subclass(BSJSTranslator,{
 
   api = {
     BSOMetaJSParser: BSOMetaJSParser,
-    BSOMetaJSTranslator: BSOMetaJSTranslator    
+    BSOMetaJSTranslator: BSOMetaJSTranslator
   }
-  $.extend(OMeta.interpreters, api);
+  subclass(OMeta.interpreters, api);
   return api;
 });
