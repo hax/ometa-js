@@ -4,11 +4,18 @@ var vm = require('vm'),
 	fs = require('fs'),
 	path = require('path')
 
-var filename = require.resolve('./all')
-var mtime = Math.max(mt(filename), mt(__filename))
+var mtime = mt(__filename)
 var context = vm.createContext()
-var code = fs.readFileSync(filename).toString()
-vm.runInContext(code, context, filename)
+function load(module) {
+	var filename = require.resolve(module)
+	mtime = Math.max(mt(filename), mtime)
+	var code = fs.readFileSync(filename).toString()
+	vm.runInContext(code, context, filename)
+}
+
+load('es6-shim')
+load('./all')
+
 
 module.exports = context
 
