@@ -6,6 +6,7 @@ var vm = require('vm'),
 
 var mtime = mt(__filename)
 var context = vm.createContext()
+context.global = context
 function load(module) {
 	var filename = require.resolve(module)
 	mtime = Math.max(mt(filename), mtime)
