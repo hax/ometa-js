@@ -295,6 +295,24 @@ Failer.prototype.used = false
 // the OMeta "class" and basic functionality
 
 var OMeta = {
+  _applyRule_: function (rule, origInput, sentinel, memoRec) {
+    this.input = origInput
+    var ans = this[rule].call(this)
+    if (this.input == sentinel)
+      throw fail
+    memoRec.ans       = ans
+    memoRec.nextInput = this.input
+  },
+  _tryApplyRule_: function (rule, origInput, sentinel, memoRec) {
+    try {
+      this._applyRule_(rule, origInput, sentinel, memoRec)
+      return false
+    }
+    catch (f) {
+      if (f != fail) throw f
+      return true
+    }
+  },
   _apply: function(rule) {
     var memoRec = this.input.memo[rule]
     if (memoRec == undefined) {
@@ -307,19 +325,7 @@ var OMeta = {
       if (failer.used) {
         var sentinel = this.input
         while (true) {
-          try {
-            this.input = origInput
-            var ans = this[rule].call(this)
-            if (this.input == sentinel)
-              throw fail
-            memoRec.ans       = ans
-            memoRec.nextInput = this.input
-          }
-          catch (f) {
-            if (f != fail)
-              throw f
-            break
-          }
+          if (this._tryApplyRule_(rule, origInput, sentinel, memoRec)) break
         }
       }
     }
