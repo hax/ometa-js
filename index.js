@@ -4,22 +4,23 @@ var vm = require('vm'),
 	fs = require('fs'),
 	path = require('path')
 
-var mtime = mt(__filename)
-var context = vm.createContext()
-context.global = context
-if (!context.setTimeout) context.setTimeout = setTimeout
-function load(module) {
-	var filename = require.resolve(module)
-	mtime = Math.max(mt(filename), mtime)
-	var code = fs.readFileSync(filename).toString()
-	vm.runInContext(code, context, filename)
-}
+var mtime = Math.max(mt(__filename), mt(require.resolve('./all')))
+// var context = vm.createContext()
+// context.global = context
+// if (!context.setTimeout) context.setTimeout = setTimeout
+// function load(module) {
+// 	var filename = require.resolve(module)
+// 	mtime = Math.max(mt(filename), mtime)
+// 	var code = fs.readFileSync(filename).toString()
+// 	vm.runInContext(code, context, filename)
+// }
+//
+// load('es6-shim')
+// load('./all')
+var ometa = require('./all')
 
-load('es6-shim')
-load('./all')
-
-
-module.exports = context
+// module.exports = context
+module.exports = ometa
 
 require.extensions['.ometajs'] = function(module, filename) {
 	var code, temp = filename.slice(0, -2) + '.js'
@@ -28,7 +29,7 @@ require.extensions['.ometajs'] = function(module, filename) {
 	} else {
 		console.log('recompile', filename)
 		code = fs.readFileSync(filename).toString()
-		code = context.translateCode(code)
+		code = ometa.translateCode(code)
 		code = wrapModule(temp, code)
 		fs.writeFileSync(temp, code)
 	}
@@ -50,11 +51,12 @@ function wrapModule(filename, code) {
 		{
 			re: /^import\s+(.*?)\s+from\s+(.*)/,
 			tr: function(m) {
-				return 'void function(m){' +
-					'Object.defineProperties(imports, {' +
-						m[1].replace(/([^,]+)/g, '$1:{get:function(){return m.$1}}') +
-					'})' +
-				'}(require(' + m[2] + '))'
+				// return 'void function(m){' +
+				// 	'Object.defineProperties(imports, {' +
+				// 		m[1].replace(/([^,]+)/g, '$1:{get:function(){return m.$1}}') +
+				// 	'})' +
+				// '}(require(' + m[2] + '))'
+				return 'var _m = require(' + m[2] + '); var ' + m[1].replace(/([^,]+)/g, '$1 = _m.$1')
 			}
 		},
 		{
@@ -72,8 +74,8 @@ function wrapModule(filename, code) {
 		'var OMeta = ometajs.OMeta',
 		'var fail = ometajs.fail',
 		'var objectThatDelegatesTo = ometajs.objectThatDelegatesTo',
-		'var imports = Object.create(null)',
-		'with (imports) {',
+		// 'var imports = Object.create(null)',
+		// 'with (imports) {',
 			'void function(){',
 				'"use strict"',
 	]
@@ -93,7 +95,7 @@ function wrapModule(filename, code) {
 	targetCode.push(
 				code,
 			'}()',
-		'}'
+		// '}'
 	)
 	return targetCode.join('\n')
 }
