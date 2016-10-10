@@ -16,6 +16,7 @@ function load(module) {
 }
 
 load('es6-shim')
+load('es7-shim')
 load('./all')
 
 
