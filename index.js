@@ -16,7 +16,7 @@ function load(module) {
 }
 
 load('es6-shim')
-load('es7-shim')
+load('es7-shim/dist/es7-shim.min')
 load('./all')
 
 
