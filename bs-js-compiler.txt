@@ -4,9 +4,9 @@ ometa BSJSParser {
   nameRest     = nameFirst | digit,
   iName        = <nameFirst nameRest*>,
   isKeyword :x = ?BSJSParser._isKeyword(x),
-  name         = iName:n ~isKeyword(n)                                               -> [#name, n=='self' ? '$elf' : n],
+  name         = iName:n ~isKeyword(n)                                               -> [#name, n],
   keyword      = iName:k isKeyword(k)                                                -> [k, k],
-  hexDigit     = char:x {this.hexDigits.indexOf(x.toLowerCase())}:v ?(v >= 0)        -> v,
+  hexDigit     = char:x {hexDigits.indexOf(x.toLowerCase())}:v ?(v >= 0)        -> v,
   hexLit       = hexLit:n hexDigit:d                                                 -> (n * 16 + d)
                | hexDigit,
   number       = ``0x'' hexLit:n                                                     -> [#number, n]
@@ -18,7 +18,7 @@ ometa BSJSParser {
                | '\'' (escapeChar | ~'\'' char)*:cs '\''                             -> [#string, cs.join('')]
                | '"'  (escapeChar | ~'"'  char)*:cs '"'                              -> [#string, cs.join('')]
                | ('#' | '`') iName:n                                                 -> [#string, n],
-  special      = ( '('   | ')'    | '{'    | '}'     | '['    | ']'     | ','    
+  special      = ( '('   | ')'    | '{'    | '}'     | '['    | ']'     | ','
                  | ';'   | '?'    | ':'    | ``!=='' | ``!='' | ``==='' | ``==''
                  | ``='' | ``>='' | '>'    | ``<=''  | '<'    | ``++''  | ``+=''
                  | '+'   | ``--'' | ``-='' | '-'     | ``*='' | '*'     | ``/=''
@@ -151,9 +151,9 @@ ometa BSJSParser {
 
   topLevel     = srcElems:r spaces end                                               -> r
 }
-BSJSParser.hexDigits = "0123456789abcdef"
+var hexDigits = "0123456789abcdef"
 BSJSParser.keywords  = { }
-keywords = ["break", "case", "catch", "continue", "default", "delete", "do", "else", "finally", "for", "function", "if", "in",
+var keywords = ["break", "case", "catch", "continue", "default", "delete", "do", "else", "finally", "for", "function", "if", "in",
             "instanceof", "new", "return", "switch", "this", "throw", "try", "typeof", "var", "void", "while", "with", "ometa"]
 for (var idx = 0; idx < keywords.length; idx++)
   BSJSParser.keywords[keywords[idx]] = true
@@ -181,7 +181,7 @@ ometa BSJSTranslator {
   break                                                 -> 'break',
   continue                                              -> 'continue',
   number   :n                                           -> ('(' + n + ')'),
-  string   :s                                           -> s.toProgramString(),
+  string   :s                                           -> sourceString(s),
   regExpr  :x                                           -> x,
   arr      trans*:xs                                    -> ('[' + xs.join(',') + ']'),
   unop     :op trans:x                                  -> ('(' + op + ' ' + x + ')'),
@@ -206,7 +206,7 @@ ometa BSJSTranslator {
               ( (?(x[x.length - 1] == '}') | end) -> x
               | empty                             -> (x  + ';')
               )
-           )*:xs                                        -> ('{' + xs.join('') + '}'),
+           )*:xs                                        -> (xs.join('')),
   func     :args curlyTrans:body                        -> ('(function (' + args.join(',') + ')' + body + ')'),
   call     trans:fn trans*:args                         -> (fn + '(' + args.join(',') + ')'),
   send     :msg trans:recv trans*:args                  -> (recv + '.' + msg + '(' + args.join(',') + ')'),
@@ -215,7 +215,7 @@ ometa BSJSTranslator {
   throw    trans:x                                      -> ('throw ' + x),
   try      curlyTrans:x :name curlyTrans:c curlyTrans:f -> ('try ' + x + 'catch(' + name + ')' + c + 'finally' + f),
   json     trans*:props                                 -> ('({' + props.join(',') + '})'),
-  binding  :name trans:val                              -> (name.toProgramString() + ': ' + val),
+  binding  :name trans:val                              -> (sourceString(name) + ': ' + val),
   switch   trans:x trans*:cases                         -> ('switch(' + x + '){' + cases.join(';') + '}'),
   case     trans:x trans:y                              -> ('case ' + x + ': '+ y),
   default          trans:y                              -> ('default: ' + y)

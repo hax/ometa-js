@@ -1,26 +1,29 @@
 'use strict'
 
-var vm = require('vm'),
-	fs = require('fs'),
+// var vm = require('vm')
+var fs = require('fs'),
 	path = require('path')
 
 var mtime = mt(__filename)
-var context = vm.createContext()
-context.global = context
-if (!context.setTimeout) context.setTimeout = setTimeout
-function load(module) {
-	var filename = require.resolve(module)
-	mtime = Math.max(mt(filename), mtime)
-	var code = fs.readFileSync(filename).toString()
-	vm.runInContext(code, context, filename)
-}
+// var context = vm.createContext()
+// context.global = context
+// if (!context.setTimeout) context.setTimeout = setTimeout
+// if (!context.console) context.console = console
+// function load(module) {
+// 	var filename = require.resolve(module)
+// 	mtime = Math.max(mt(filename), mtime)
+// 	var code = fs.readFileSync(filename).toString()
+// 	vm.runInContext(code, context, filename)
+// }
+//
+// load('es6-shim')
+// load('es7-shim/dist/es7-shim.min')
+// load('./all')
 
-load('es6-shim')
-load('es7-shim/dist/es7-shim.min')
-load('./all')
+require('es7-shim')
 
-
-module.exports = context
+module.exports = require('./all')
+var translateCode = require('./all').translateCode
 
 require.extensions['.ometajs'] = function(module, filename) {
 	var code, temp = filename.slice(0, -2) + '.js'
@@ -29,7 +32,7 @@ require.extensions['.ometajs'] = function(module, filename) {
 	} else {
 		console.log('recompile', filename)
 		code = fs.readFileSync(filename).toString()
-		code = context.translateCode(code)
+		code = translateCode(code)
 		code = wrapModule(temp, code)
 		fs.writeFileSync(temp, code)
 	}
@@ -72,14 +75,13 @@ function wrapModule(filename, code) {
 		'var ometajs = require(' + JSON.stringify(ometajsPath) + ')',
 		'var OMeta = ometajs.OMeta',
 		'var fail = ometajs.fail',
-		'var objectThatDelegatesTo = ometajs.objectThatDelegatesTo',
 		'var imports = Object.create(null)',
 		'with (imports) {',
 			'void function(){',
 				'"use strict"',
 	]
-	//assert(code[0] === '{')
-	var re = /^"(.*?)";/, offset = 1, m
+	
+	var re = /^"(.*?)";/, offset = 0, m
 	while (m = re.exec(code.slice(offset))) {
 		var s = m[1].replace(/\\'/g, "'")
 		for (var i = 0; i < dpProcs.length; i++) {
